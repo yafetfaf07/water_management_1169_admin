@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,9 +19,33 @@ import {
 import "./App.css";
 import { DollarSign } from "lucide-react";
 import { Button } from "./components/ui/button";
+import { useEffect, useState } from "react";
+import { supabase } from "./createClient";
 
 function App() {
-  const [count, setCount] = useState(0);
+const [uid,setuid] = useState<string | null>('');
+  useEffect(() => {
+      const fetchUserData = async () => {
+        const userData = await supabase.from('user').select('id');
+        console.log("User Data: ",userData.data);
+        const billData = await supabase.from('bill_reference').select('status').eq('uid',userData.data)
+        if(billData.error)
+        console.log("bill Error: ", billData.error);
+        else if (billData.data)
+        console.log("bill data: ", billData.data);
+        
+        
+      }
+
+      // const billData = async () => {
+      //   const {data} = await supabase.from('bill_reference').select('status');
+      //   console.log("Bill Data: ",data);
+        
+      // }
+
+      fetchUserData()
+      // billData();
+  }, [])
 
   return (
     <>
@@ -39,7 +61,7 @@ function App() {
           </div>
           <Dialog>
             <DialogTrigger>
-              <Button>Create Bill</Button>
+              <Button className="mt-3">Create Bill</Button>
             </DialogTrigger>
             <DialogContent className=" h-80">
               <DialogHeader>
@@ -89,23 +111,30 @@ function App() {
           </div>
         </div>
         <div className="flex flex-wrap gap-5 w-[90%] mx-auto my-0 justify-center  mt-5 md:w-[85%] gap-10 p-1 "></div>
-
+          <select className="float-right">
+            <option value="Mesk 2017">This month</option>
+            <option value="Mesk 2017">Mesk 2017</option>
+            <option value="Mesk 2017">Mesk 2017</option>
+            <option value="Mesk 2017">Mesk 2017</option>
+          </select>
         <Table>
   <TableCaption>A list of your recent invoices.</TableCaption>
   <TableHeader>
     <TableRow>
-      <TableHead className="w-[100px]">Invoice</TableHead>
-      <TableHead>Status</TableHead>
-      <TableHead>Method</TableHead>
+      <TableHead className="w-[100px]">Name</TableHead>
+      <TableHead>House No.</TableHead>
+      <TableHead>Phone</TableHead>
       <TableHead className="text-right">Amount</TableHead>
+      <TableHead>Status</TableHead>
     </TableRow>
   </TableHeader>
   <TableBody>
     <TableRow>
-      <TableCell className="font-medium">INV001</TableCell>
-      <TableCell>Paid</TableCell>
-      <TableCell>Credit Card</TableCell>
+      <TableCell className="font-medium">Ashenafi M.</TableCell>
+      <TableCell>1169/42</TableCell>
+      <TableCell>0945321854</TableCell>
       <TableCell className="text-right">$250.00</TableCell>
+      <TableCell>UNPAID</TableCell>
     </TableRow>
   </TableBody>
 </Table>
