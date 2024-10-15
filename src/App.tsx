@@ -23,29 +23,59 @@ import { useEffect, useState } from "react";
 import { supabase } from "./createClient";
 
 function App() {
-const [uid,setuid] = useState<string | null>('');
+
+  interface UserModel {
+    floor_no:string,
+    fname:string,
+    house_no:string,
+    id:string,
+    phone_no:string
+  }
+  interface BillModel {
+    bid:string,
+    created_at:string,
+    status:string,
+    transaction_no:string,
+    uid:string,
+    user_exchange:string
+  }
+  const [uid, setuid] = useState<UserModel[]>([{
+    floor_no:'',
+    fname:'',
+    house_no:'',
+    id:'',
+    phone_no:''
+  }]);
+  const [bd, setbd] = useState<BillModel[]>([ {
+      bid:"",
+      created_at:'',
+      status:"",
+      transaction_no:'',
+      uid:'',
+      user_exchange:''
+  }]);
   useEffect(() => {
-      const fetchUserData = async () => {
-        const userData = await supabase.from('user').select('id');
-        console.log("User Data: ",userData.data);
-        const billData = await supabase.from('bill_reference').select('status').eq('uid',userData.data)
-        if(billData.error)
-        console.log("bill Error: ", billData.error);
-        else if (billData.data)
-        console.log("bill data: ", billData.data);
-        
-        
+    const fetchUserData = async () => {
+      const userData = await supabase
+        .from("user")
+        .select("id,fname,house_no,floor_no,phone_no");
+      console.log("User Data: ", userData.data);
+      if (userData.data) {
+        setuid(userData.data);
       }
+      const billData = await supabase.from("bill_reference").select("*");
+      if (billData.data) {
+        setbd(billData.data);
+        console.log("Bill Data: ", billData.data);
 
-      // const billData = async () => {
-      //   const {data} = await supabase.from('bill_reference').select('status');
-      //   console.log("Bill Data: ",data);
-        
-      // }
+        for (let i = 0; i < billData.data.length; i++) {
+          // if(billData.data[i])
+        }
+      }
+    };
 
-      fetchUserData()
-      // billData();
-  }, [])
+    fetchUserData();
+  }, []);
 
   return (
     <>
@@ -68,17 +98,34 @@ const [uid,setuid] = useState<string | null>('');
                 <DialogTitle>Create Bill</DialogTitle>
                 <DialogDescription className="flex flex-col">
                   <div className="flex flex-col">
-                    <div className="flex flex-col" style={{alignItems:"flex-start"}}>
-                      <span className="text-black font-medium text-[18px]">Bill-Name</span>
-                      <input type="text" alt="" className="border border-gray-400 w-72 rounded-sm mt-2" />
+                    <div
+                      className="flex flex-col"
+                      style={{ alignItems: "flex-start" }}
+                    >
+                      <span className="text-black font-medium text-[18px]">
+                        Bill-Name
+                      </span>
+                      <input
+                        type="text"
+                        alt=""
+                        className="border border-gray-400 w-72 rounded-sm mt-2"
+                      />
                     </div>{" "}
-                    <div className="flex flex-col" style={{alignItems:"flex-start"}}>
-                      <span className="text-black font-medium text-[18px] mt-2 ">Bill-price</span>
-                      <input type="text" alt="" className="border border-gray-400 mt-2 w-72 rounded-sm" />
+                    <div
+                      className="flex flex-col"
+                      style={{ alignItems: "flex-start" }}
+                    >
+                      <span className="text-black font-medium text-[18px] mt-2 ">
+                        Bill-price
+                      </span>
+                      <input
+                        type="text"
+                        alt=""
+                        className="border border-gray-400 mt-2 w-72 rounded-sm"
+                      />
                     </div>{" "}
                   </div>
                   <Button className="p-1 w-24 mt-10 ml-5 ">Create</Button>
-
                 </DialogDescription>
               </DialogHeader>
             </DialogContent>
@@ -111,34 +158,51 @@ const [uid,setuid] = useState<string | null>('');
           </div>
         </div>
         <div className="flex flex-wrap gap-5 w-[90%] mx-auto my-0 justify-center  mt-5 md:w-[85%] gap-10 p-1 "></div>
-          <select className="float-right">
-            <option value="Mesk 2017">This month</option>
-            <option value="Mesk 2017">Mesk 2017</option>
-            <option value="Mesk 2017">Mesk 2017</option>
-            <option value="Mesk 2017">Mesk 2017</option>
-          </select>
+        <select className="float-right">
+          <option value="Mesk 2017">This month</option>
+          <option value="Mesk 2017">Mesk 2017</option>
+          <option value="Mesk 2017">Mesk 2017</option>
+          <option value="Mesk 2017">Mesk 2017</option>
+        </select>
         <Table>
-  <TableCaption>A list of your recent invoices.</TableCaption>
-  <TableHeader>
-    <TableRow>
-      <TableHead className="w-[100px]">Name</TableHead>
-      <TableHead>House No.</TableHead>
-      <TableHead>Phone</TableHead>
-      <TableHead className="text-right">Amount</TableHead>
-      <TableHead>Status</TableHead>
-    </TableRow>
-  </TableHeader>
-  <TableBody>
-    <TableRow>
-      <TableCell className="font-medium">Ashenafi M.</TableCell>
-      <TableCell>1169/42</TableCell>
-      <TableCell>0945321854</TableCell>
-      <TableCell className="text-right">$250.00</TableCell>
-      <TableCell>UNPAID</TableCell>
-    </TableRow>
-  </TableBody>
-</Table>
-
+          <TableCaption>A list of your recent invoices.</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>House No.</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {
+              uid.map((u) => {
+              return <TableRow>
+                <TableCell className="font">{u.fname}</TableCell>
+                <TableCell>{u.house_no}</TableCell>
+                <TableCell>{u.phone_no}</TableCell>
+                {
+                  bd.map((b) => {
+                    if(b.uid==u.id) {
+                      return <>
+                      <TableCell>{b.status}</TableCell>
+                      <TableCell></TableCell>
+                      </>
+                    }
+                  })
+                }
+              </TableRow>
+              })
+            }
+      {/* <TableRow>
+              <TableCell className="font-medium">Ashenafi M.</TableCell>
+              <TableCell>1169/42</TableCell>
+              <TableCell>0945321854</TableCell>
+              <TableCell className="text-right">$250.00</TableCell>
+              <TableCell>UNPAID</TableCell>
+            </TableRow> */}
+          </TableBody>
+        </Table>
       </section>
     </>
   );
