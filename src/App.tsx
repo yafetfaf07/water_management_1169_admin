@@ -19,43 +19,72 @@ import {
 import "./App.css";
 import { DollarSign } from "lucide-react";
 import { Button } from "./components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "./createClient";
 
 function App() {
-
   interface UserModel {
-    floor_no:string,
-    fname:string,
-    house_no:string,
-    id:string,
-    phone_no:string
+    floor_no: string;
+    fname: string;
+    house_no: string;
+    id: string;
+    phone_no: string;
   }
   interface BillModel {
-    bid:string,
-    created_at:string,
-    status:string,
-    transaction_no:string,
-    uid:string,
-    user_exchange:string
+    bid: string;
+    created_at: string;
+    status: string;
+    transaction_no: string;
+    uid: string;
+    user_exchange: string;
   }
-  const [uid, setuid] = useState<UserModel[]>([{
-    floor_no:'',
-    fname:'',
-    house_no:'',
-    id:'',
-    phone_no:''
-  }]);
-  const [bd, setbd] = useState<BillModel[]>([ {
-      bid:"",
-      created_at:'',
-      status:"",
-      transaction_no:'',
-      uid:'',
-      user_exchange:''
-  }]);
+  interface SpecificUser {
+    transaction_no:string;
+    user_exchange:string;
+    fname:string;
+    phone_no:string;
+    floor_no:string;
+    house_no:string;
+  }
+  const dialogReference = useRef<HTMLDialogElement>(null);
+
+  const [uid, setuid] = useState<UserModel[]>([
+    {
+      floor_no: "",
+      fname: "",
+      house_no: "",
+      id: "",
+      phone_no: "",
+    },
+  ]);
+  const [bd, setbd] = useState<BillModel[]>([
+    {
+      bid: "",
+      created_at: "",
+      status: "",
+      transaction_no: "",
+      uid: "",
+      user_exchange: "",
+    },
+  ]);
+
+
+  const fetchUserById = async (id: string) => {
+    dialogReference.current?.showModal();
+
+    const userData = await supabase
+      .from("user")
+      .select("fname,lname,house_no,user_name,phone_no")
+      .eq("id", id);
+
+    const billData = await supabase.from('bill_reference').select("*").eq('uid',id)
+    console.log("Specific user: ", userData.data);
+    console.log("Specifice bill for a specific user: ", billData.data);
+    
+  };
   useEffect(() => {
     const fetchUserData = async () => {
+
       const userData = await supabase
         .from("user")
         .select("id,fname,house_no,floor_no,phone_no");
@@ -175,34 +204,47 @@ function App() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {
-              uid.map((u) => {
-              return <TableRow>
-                <TableCell className="font">{u.fname}</TableCell>
-                <TableCell>{u.house_no}</TableCell>
-                <TableCell>{u.phone_no}</TableCell>
-                {
-                  bd.map((b) => {
-                    if(b.uid==u.id) {
-                      return <>
-                      <TableCell>{b.status}</TableCell>
-                      <TableCell></TableCell>
-                      </>
+            {uid.map((u) => {
+              return (
+                <TableRow
+                  onClick={() => {
+                      fetchUserById(u.id);
+                  }}
+                >
+                  <TableCell>{u.fname}</TableCell>
+                  <TableCell>{u.house_no}</TableCell>
+                  <TableCell>{u.phone_no}</TableCell>
+                  {bd.map((b) => {
+                    if (b.uid == u.id) {
+                      return (
+                        <>
+                          <TableCell className="font-bold  text-green-600 w-2 p-1">
+                            {b.status}
+                          </TableCell>
+                        </>
+                      );
                     }
-                  })
-                }
-              </TableRow>
-              })
-            }
-      {/* <TableRow>
-              <TableCell className="font-medium">Ashenafi M.</TableCell>
-              <TableCell>1169/42</TableCell>
-              <TableCell>0945321854</TableCell>
-              <TableCell className="text-right">$250.00</TableCell>
-              <TableCell>UNPAID</TableCell>
-            </TableRow> */}
+                  })}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
+        <dialog ref={dialogReference} className="w-[90%]">
+          <button onClick={() => dialogReference.current?.close()}>x</button>
+          {uid.map((u) => {
+            return (
+              <div className="flex flex-col w-[90%]">
+                <span>{u.fname}</span>
+                <span>{u.house_no}</span>
+                <span>{u.floor_no}</span>
+                <span>{u.phone_no}</span>
+
+
+              </div>
+            );
+          })}
+        </dialog>
       </section>
     </>
   );
