@@ -39,15 +39,26 @@ function App() {
     user_exchange: string;
   }
   interface SpecificUser {
-    transaction_no:string;
-    user_exchange:string;
-    fname:string;
-    phone_no:string;
-    floor_no:string;
-    house_no:string;
+    transaction_no: string;
+    user_name: string;
+    fname: string;
+    lname: string;
+    phone_no: string;
+    floor_no: string;
+    house_no: string;
+    user_exchange: string;
   }
   const dialogReference = useRef<HTMLDialogElement>(null);
-
+  const [suser, setsuser] = useState<SpecificUser>({
+    fname: "",
+    house_no: "",
+    lname: "",
+    phone_no: "",
+    user_name: "",
+    transaction_no: "",
+    floor_no: "",
+    user_exchange: "",
+  });
   const [uid, setuid] = useState<UserModel[]>([
     {
       floor_no: "",
@@ -68,23 +79,52 @@ function App() {
     },
   ]);
 
-
   const fetchUserById = async (id: string) => {
     dialogReference.current?.showModal();
 
     const userData = await supabase
       .from("user")
-      .select("fname,lname,house_no,user_name,phone_no")
+      .select("fname,lname,house_no,user_name,phone_no,floor_no")
       .eq("id", id);
 
-    const billData = await supabase.from('bill_reference').select("*").eq('uid',id)
+    const billData = await supabase
+      .from("bill_reference")
+      .select("transaction_no,user_exchange")
+      .eq("uid", id);
     console.log("Specific user: ", userData.data);
+    if (userData.data && billData.data) {
+      const { fname, lname, house_no, phone_no, user_name, floor_no } =
+        userData.data[0];
+      const { transaction_no, user_exchange } = billData.data[0];
+      setsuser({
+        transaction_no,
+        fname,
+        lname,
+        house_no,
+        phone_no,
+        user_name,
+        floor_no,
+        user_exchange,
+      });
+    } else if (userData.data && billData.data==undefined) {
+      const { fname, lname, house_no, phone_no, user_name, floor_no } =
+        userData.data[0];
+        setsuser({
+          transaction_no:'',
+          fname,
+          lname,
+          house_no,
+          phone_no,
+          user_name,
+          floor_no,
+          user_exchange:'',
+        });
+
+    }
     console.log("Specifice bill for a specific user: ", billData.data);
-    
   };
   useEffect(() => {
     const fetchUserData = async () => {
-
       const userData = await supabase
         .from("user")
         .select("id,fname,house_no,floor_no,phone_no");
@@ -204,11 +244,12 @@ function App() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {uid.map((u) => {
+            {uid.map((u, i) => {
               return (
                 <TableRow
+                  key={i}
                   onClick={() => {
-                      fetchUserById(u.id);
+                    fetchUserById(u.id);
                   }}
                 >
                   <TableCell>{u.fname}</TableCell>
@@ -232,18 +273,23 @@ function App() {
         </Table>
         <dialog ref={dialogReference} className="w-[90%]">
           <button onClick={() => dialogReference.current?.close()}>x</button>
-          {uid.map((u) => {
-            return (
-              <div className="flex flex-col w-[90%]">
-                <span>{u.fname}</span>
-                <span>{u.house_no}</span>
-                <span>{u.floor_no}</span>
-                <span>{u.phone_no}</span>
+          <div className="flex flex-col">
+            <span>First-name: {suser.fname}</span>
 
+            <span>Last-name: {suser.lname}</span>
 
-              </div>
-            );
-          })}
+            <span>Floor-no: {suser.floor_no}</span>
+
+            <span>House-no:{suser.house_no}</span>
+
+            <span>Phone-no:{suser.phone_no}</span>
+
+            <span>Exhange:{suser.user_exchange}</span>
+
+            <span>Transaction:{suser.transaction_no}</span>
+
+            <span>User-name: {suser.user_name}</span>
+          </div>
         </dialog>
       </section>
     </>
