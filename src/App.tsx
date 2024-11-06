@@ -21,7 +21,6 @@ import { DollarSign } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "./createClient";
-import { error, log } from "console";
 
 function App() {
   interface UserModel {
@@ -54,7 +53,18 @@ function App() {
     house_no: string;
     user_exchange: string;
   }
+  interface BillSort {
+    id:string;
+    bill_name:string;
+  }
   const dialogReference = useRef<HTMLDialogElement>(null);
+  const[billsort,setbillsort] = useState<BillSort[]> ([
+    {
+      bill_name:"",
+      id:""
+    }
+  ]);
+  const [selects,setselects] = useState<string>("269d0631-6d7a-42d4-abb3-8f90839a44be");
   const [createbill,setcreatebill] = useState<CreateBill>({
     bill_name:"",
     price:0
@@ -153,19 +163,23 @@ function App() {
       if (userData.data) {
         setuid(userData.data);
       }
-      const billData = await supabase.from("bill_reference").select("*");
+      const billData = await supabase.from("bill_reference").select("*").eq("bid",selects);
       if (billData.data) {
         setbd(billData.data);
         console.log("Bill Data: ", billData.data);
 
-        // for (let i = 0; i < billData.data.length; i++) {
-        //   // if(billData.data[i])
-        // }
       }
     };
-
+    const fetchBillData = async () => {
+      const billDataforSelectOption = await supabase.from('bill').select("id,bill_name");
+      console.log("BillData for sort: ", billDataforSelectOption.data);
+      if(billDataforSelectOption.data)
+      setbillsort(billDataforSelectOption.data);
+      
+    }
     fetchUserData();
-  }, []);
+    fetchBillData();
+  }, [selects]);
 
   return (
     <>
@@ -181,11 +195,11 @@ function App() {
           </div>
           <Dialog>
             <DialogTrigger>
-              <Button className="mt-3">Create Bill</Button>
+              <Button className="mt-3">Add Bill</Button>
             </DialogTrigger>
             <DialogContent className=" h-80">
               <DialogHeader>
-                <DialogTitle>Create Bill</DialogTitle>
+                <DialogTitle>Add Bill</DialogTitle>
                 <DialogDescription className="flex flex-col">
                   <div className="flex flex-col">
                     <div
@@ -223,7 +237,7 @@ function App() {
                       />
                     </div>{" "}
                   </div>
-                  <button className="p-1 w-24 mt-10 ml-5 " onClick={() => {
+                  <button className="p-1 w-24 mt-10 ml-5 bg-black text-white rounded-md font-semibold p-2" onClick={() => {
                     createBill();
                     
                   }}>Create</button>
@@ -259,11 +273,12 @@ function App() {
           </div>
         </div>
         <div className="flex flex-wrap gap-5 w-[90%] mx-auto my-0 justify-center  mt-5 md:w-[85%] gap-10 p-1 "></div>
-        <select className="float-right">
-          <option value="Mesk 2017">This month</option>
-          <option value="Mesk 2017">Mesk 2017</option>
-          <option value="Mesk 2017">Mesk 2017</option>
-          <option value="Mesk 2017">Mesk 2017</option>
+        <select className="float-right" onChange={(e) =>setselects(e.target.value) }>
+         {
+          billsort.map((b) => {
+            return <option value={b.id}>{b.bill_name}</option>
+          })
+         }
         </select>
         <Table>
           <TableCaption>A list of your recent invoices.</TableCaption>
