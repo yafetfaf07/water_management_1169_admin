@@ -64,7 +64,7 @@ function App() {
       id:""
     }
   ]);
-  const [selects,setselects] = useState<string>("269d0631-6d7a-42d4-abb3-8f90839a44be");
+  const [selects,setselects] = useState<string>("");
   const [createbill,setcreatebill] = useState<CreateBill>({
     bill_name:"",
     price:0
@@ -100,7 +100,6 @@ function App() {
   ]);
 
   const createBill = async () => {
-    console.log("Aloha: ");
     
     const billCreate = await supabase.from('bill').insert(createbill);
     if(billCreate.error)
@@ -119,7 +118,7 @@ function App() {
     const billData = await supabase
       .from("bill_reference")
       .select("transaction_no,user_exchange")
-      .eq("uid", id);
+      .eq("uid", id).eq('bid',selects); // I have to compare between the transaction bid and the current bid
     if (billData) {
       dialogReference.current?.showModal();
     }
