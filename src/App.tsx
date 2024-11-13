@@ -79,7 +79,7 @@ function App() {
     floor_no: "",
     user_exchange: "",
   });
-  const [uid, setuid] = useState<UserModel[]>([
+  const [uid, setuid] = useState<UserModel[]>([ // user table
     {
       floor_no: "",
       fname: "",
@@ -88,7 +88,7 @@ function App() {
       phone_no: "",
     },
   ]);
-  const [bd, setbd] = useState<BillModel[]>([
+  const [bd, setbd] = useState<BillModel[]>([ // bill_reference table
     {
       bid: "",
       created_at: "",
