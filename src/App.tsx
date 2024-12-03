@@ -343,12 +343,16 @@ function App() {
 
             <span>User-name: {suser.user_name}</span>
           </div>
-          <Button className="mt-3 bg-green-600 hover:bg-green-700">Flag as paid</Button>
+          <Button className="mt-3 bg-green-600 hover:bg-green-700" onClick={async() => {
+            const response = await supabase.from("bill_reference").update({status:"PAID"}).eq('bid',selects).eq('uid',idForDeletion)
+            console.log("Update Response: ", response.status);
+            
+          }}>Flag as paid</Button>
           <Button className="ml-3 bg-red-600 hover:bg-red-800 "  onClick={async() => {
             console.log("User Id for deletion: ",idForDeletion);
             console.log("Bill Id for deletion: ",selects)
             const response = await supabase.from('bill_reference').delete().eq('bid',selects).eq('uid',idForDeletion)
-            console.log("Response: ",response.status);
+            console.log("Delete Response: ",response.status);
             
           }}>Flag as unpaid</Button>
         </dialog>
