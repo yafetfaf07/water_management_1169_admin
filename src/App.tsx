@@ -21,7 +21,6 @@ import { DollarSign } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "./createClient";
-import { log } from "console";
 
 function App() {
   interface UserModel {
@@ -52,6 +51,7 @@ function App() {
     floor_no: string;
     house_no: string;
     user_exchange: string;
+    created_at: string;
   }
   interface BillSort {
     id: string;
@@ -65,7 +65,10 @@ function App() {
       id: "",
     },
   ]);
-  const [selects, setselects] = useState<string>("");
+  const [billSelectId, setselects] = useState<string>("");
+  const [pendingCount, setPendingCount] = useState<number | undefined>(0);
+  const [paidCount, setPaidCount] = useState<number | undefined>(0);
+
   const [createbill, setcreatebill] = useState<CreateBill>({
     bill_name: "",
     price: 0,
@@ -79,6 +82,7 @@ function App() {
     transaction_no: "",
     floor_no: "",
     user_exchange: "",
+    created_at: "",
   });
   const [uid, setuid] = useState<UserModel[]>([
     // user table
@@ -115,13 +119,13 @@ function App() {
       .from("user")
       .select("fname,lname,house_no,user_name,phone_no,floor_no")
       .eq("id", id);
-      setidForDeletion(id);
+    setidForDeletion(id);
 
     const billData = await supabase
       .from("bill_reference")
-      .select("transaction_no,user_exchange")
+      .select("transaction_no,user_exchange, created_at")
       .eq("uid", id)
-      .eq("bid", selects); // I have to compare between the transaction bid and the current bid
+      .eq("bid", billSelectId); // I have to compare between the transaction bid and the current bid
     if (billData) {
       dialogReference.current?.showModal();
     }
@@ -129,7 +133,7 @@ function App() {
     if (userData.data && billData.data) {
       const { fname, lname, house_no, phone_no, user_name, floor_no } =
         userData.data[0];
-      const { transaction_no, user_exchange } = billData.data[0];
+      const { transaction_no, user_exchange, created_at } = billData.data[0];
       setsuser({
         transaction_no,
         fname,
@@ -139,6 +143,7 @@ function App() {
         user_name,
         floor_no,
         user_exchange,
+        created_at,
       });
     }
     console.log("Specific bill for a specific user: ", billData.data);
@@ -155,7 +160,7 @@ function App() {
       const billData = await supabase
         .from("bill_reference")
         .select("*")
-        .eq("bid", selects);
+        .eq("bid", billSelectId);
       if (billData.data) {
         setbd(billData.data);
         console.log("Bill Data: ", billData.data);
@@ -169,9 +174,26 @@ function App() {
       if (billDataforSelectOption.data)
         setbillsort(billDataforSelectOption.data);
     };
+
+    const fetchCounter = async () => {
+      const pendingCounter = await supabase
+        .from("bill_reference")
+        .select("bid", { count: "exact" }) // Enables counting
+        .eq("status", "PENDING")
+        .eq("bid", `${billSelectId}`);
+      const paidCounter = await supabase
+        .from("bill_reference")
+        .select("bid", { count: "exact" }) // Enables counting
+        .eq("status", "PAID")
+        .eq("bid", `${billSelectId}`);
+      console.log("Pending Counter: ", pendingCounter.data);
+      setPendingCount(pendingCounter.data?.length);
+      setPaidCount(paidCounter.data?.length);
+    };
     fetchUserData();
     fetchBillData();
-  }, [selects]);
+    fetchCounter();
+  }, [billSelectId]);
 
   return (
     <>
@@ -249,7 +271,9 @@ function App() {
         <div className=" md:flex">
           <div className="bg-white h-20 w-[85%] mx-auto my-0 flex justify-between items-center rounded-lg  mt-3 md:w-[300px] h-32 text-2xl">
             <div className="flex flex-col bg-white ml-5">
-              <span className="bg-white font-semibold text-3xl">5 </span>
+              <span className="bg-white font-semibold text-3xl">
+                {paidCount}{" "}
+              </span>
               <span className="bg-white">Paid users</span>
             </div>
 
@@ -265,7 +289,9 @@ function App() {
           </div>
           <div className="bg-white h-20 w-[85%] mx-auto my-0 flex justify-between items-center rounded-lg  mt-3 md:w-[300px] h-32 text-2xl">
             <div className="flex flex-col bg-white ml-5">
-              <span className="bg-white text-3xl font-semibold">2 </span>
+              <span className="bg-white text-3xl font-semibold">
+                {pendingCount}{" "}
+              </span>
               <span className="bg-white">Pending users</span>
             </div>
 
@@ -285,10 +311,10 @@ function App() {
           <TableCaption>A list of your recent invoices.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>House No.</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>ስም</TableHead>
+              <TableHead>የቤት ቁ.</TableHead>
+              <TableHead>ስልክ ቁጥር</TableHead>
+              <TableHead>ሁኔታ:</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -308,7 +334,11 @@ function App() {
                       return (
                         <>
                           <TableCell className="font-bold  text-green-600 w-2 p-1">
-                            {b.status}
+                            {b.status == "PENDING"
+                              ? "በመጠባበቅ ላይ"
+                              : b.status == "PAID"
+                              ? "ተከፍሏል"
+                              : "አልተከፈለም"}
                           </TableCell>
                         </>
                       );
@@ -342,19 +372,36 @@ function App() {
             <span>Transaction:{suser.transaction_no}</span>
 
             <span>User-name: {suser.user_name}</span>
+            <span>Bill_paid: {suser.created_at}</span>
           </div>
-          <Button className="mt-3 bg-green-600 hover:bg-green-700" onClick={async() => {
-            const response = await supabase.from("bill_reference").update({status:"PAID"}).eq('bid',selects).eq('uid',idForDeletion)
-            console.log("Update Response: ", response.status);
-            
-          }}>Flag as paid</Button>
-          <Button className="ml-3 bg-red-600 hover:bg-red-800 "  onClick={async() => {
-            console.log("User Id for deletion: ",idForDeletion);
-            console.log("Bill Id for deletion: ",selects)
-            const response = await supabase.from('bill_reference').delete().eq('bid',selects).eq('uid',idForDeletion)
-            console.log("Delete Response: ",response.status);
-            
-          }}>Flag as unpaid</Button>
+          <Button
+            className="mt-3 bg-green-600 hover:bg-green-700"
+            onClick={async () => {
+              const response = await supabase
+                .from("bill_reference")
+                .update({ status: "PAID" })
+                .eq("bid", billSelectId)
+                .eq("uid", idForDeletion);
+              console.log("Update Response: ", response.status);
+            }}
+          >
+            Flag as paid
+          </Button>
+          <Button
+            className="ml-3 bg-red-600 hover:bg-red-800 "
+            onClick={async () => {
+              console.log("User Id for deletion: ", idForDeletion);
+              console.log("Bill Id for deletion: ", billSelectId);
+              const response = await supabase
+                .from("bill_reference")
+                .delete()
+                .eq("bid", billSelectId)
+                .eq("uid", idForDeletion);
+              console.log("Delete Response: ", response.status);
+            }}
+          >
+            Flag as unpaid
+          </Button>
         </dialog>
       </section>
     </>
